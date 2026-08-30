@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ranking Signal Analysis — FlyRank Capstone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #080b10;
+      --surface:  #0e1219;
+      --card:     #131820;
+      --border:   #1e2530;
+      --accent:   #3b82f6;
+      --accent2:  #8b5cf6;
+      --green:    #10b981;
+      --red:      #ef4444;
+      --yellow:   #f59e0b;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --mono:     'Space Mono', monospace;
+      --sans:     'Space Grotesk', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      font-family: var(--mono);
+      font-size: 0.82em;
+      background: rgba(59,130,246,0.08);
+      border: 1px solid rgba(59,130,246,0.15);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: #93c5fd;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8,11,16,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--accent);
+      letter-spacing: .04em;
+    }
+    .nav-links { display: flex; gap: 28px; }
+    .nav-links a {
+      font-size: 13px; font-weight: 500;
+      color: var(--muted); letter-spacing: .03em;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 88vh;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 80px 32px 60px;
+      max-width: 900px; margin: 0 auto;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -200px; right: -200px; bottom: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 30%,
+        rgba(59,130,246,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .hero-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 32px; height: 1px;
+      background: var(--accent);
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -.03em;
+      margin-bottom: 28px;
+    }
+    h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-abstract {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 680px;
+      margin-bottom: 40px;
+      line-height: 1.8;
+    }
+    .hero-abstract strong { color: var(--text); }
+    .hero-meta {
+      display: flex; flex-wrap: wrap; gap: 12px;
+    }
+    .meta-chip {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .06em;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    /* ── STAT STRIP ── */
+    .stat-strip {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      padding: 0 32px;
+    }
+    .stat-strip-inner {
+      max-width: 900px; margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .stat-item {
+      padding: 28px 0;
+      border-right: 1px solid var(--border);
+      padding-right: 32px;
+      padding-left: 32px;
+    }
+    .stat-item:first-child { padding-left: 0; }
+    .stat-item:last-child { border-right: none; }
+    .stat-val {
+      font-family: var(--mono);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+    }
+
+    /* ── MAIN ── */
+    main { max-width: 900px; margin: 0 auto; padding: 0 32px 80px; }
+    section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+    section:last-child { border-bottom: none; }
+
+    h2 {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    h2::after {
+      content: '';
+      flex: 1; height: 1px;
+      background: var(--border);
+    }
+    h3 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      letter-spacing: -.02em;
+      margin-bottom: 14px;
+      color: var(--text);
+    }
+    p { color: var(--muted); margin-bottom: 16px; }
+    p strong { color: var(--text); }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── SIGNAL CARDS ── */
+    .signal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin: 28px 0;
+    }
+    .signal-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .signal-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .signal-rank {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .signal-name {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .signal-shap {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .signal-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* ── SHAP BAR ── */
+    .shap-bar-wrap { margin: 28px 0; }
+    .shap-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 8px;
+    }
+    .shap-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      width: 200px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .shap-bar-bg {
+      flex: 1; height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .shap-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .shap-val {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      width: 50px;
+    }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; margin: 20px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      padding: 10px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* ── PRIORITY PILLS ── */
+    .pill {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+    }
+    .pill-high   { background: rgba(239,68,68,0.12);   color: #f87171; }
+    .pill-med    { background: rgba(245,158,11,0.12);  color: #fbbf24; }
+    .pill-strat  { background: rgba(16,185,129,0.12);  color: #34d399; }
+
+    /* ── REC CARDS ── */
+    .rec-list { margin: 24px 0; }
+    .rec-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 12px;
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .rec-num {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.2);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .rec-signal {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--accent);
+      margin-bottom: 4px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .rec-finding { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    .rec-action {
+      font-size: 13px;
+      color: var(--green);
+      padding-left: 12px;
+      border-left: 2px solid var(--green);
+    }
+
+    /* ── MYTH CARDS ── */
+    .myth-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .myth-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+    .myth-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--red);
+      margin-bottom: 8px;
+    }
+    .myth-val {
+      font-family: var(--mono);
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .myth-desc { font-size: 13px; color: var(--muted); }
+
+    /* ── ALERT ── */
+    .alert {
+      background: rgba(59,130,246,0.05);
+      border: 1px solid rgba(59,130,246,0.15);
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-size: 14px;
+      color: var(--muted);
+      margin: 20px 0;
+    }
+    .alert strong { color: var(--accent); }
+
+    /* ── CODE BLOCK ── */
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.7;
+      color: #93c5fd;
+      margin: 16px 0;
+    }
+
+    /* ── MODEL COMPARISON ── */
+    .model-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .model-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+    }
+    .model-card.winner { border-color: rgba(59,130,246,0.3); }
+    .model-name {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 12px;
+    }
+    .model-score {
+      font-family: var(--mono);
+      font-size: 2.8rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .model-card.winner .model-score { color: var(--accent); }
+    .model-card:not(.winner) .model-score { color: var(--muted); }
+    .model-metric { font-size: 12px; color: var(--muted); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: .04em;
+    }
+
+    @media (max-width: 640px) {
+      nav { padding: 14px 16px; }
+      .nav-links { display: none; }
+      .hero { padding: 60px 16px 40px; }
+      main { padding: 0 16px 60px; }
+      .stat-strip { padding: 0 16px; }
+      .stat-strip-inner { grid-template-columns: 1fr 1fr; }
+      .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+      .myth-grid { grid-template-columns: 1fr; }
+      .model-compare { grid-template-columns: 1fr; }
+      .shap-label { width: 130px; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">FlyRank // Capstone</div>
+  <div class="nav-links">
+    <a href="#question">Question</a>
+    <a href="#data">Data</a>
+    <a href="#methodology">Methodology</a>
+    <a href="#results">Results</a>
+    <a href="#limitations">Limitations</a>
+    <a href="#recommendations">Recommendations</a>
+    <a href="#reproducibility">Reproducibility</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">Ranking Signal Analysis &nbsp;·&nbsp; FlyRank ML Internship</div>
+  <h1>What actually drives<br/><em>search visibility?</em></h1>
+  <p class="hero-abstract">
+    We analyze <strong>30,000 anonymized content-performance records</strong> from the FlyRank dataset
+    to identify which signals predict search ranking tier and trend direction —
+    and which commonly assumed signals (like search volume and word count) are myths.
+    A Random Forest classifier achieves <strong>Precision@50 = 0.90</strong>,
+    a <strong>5× lift</strong> over the majority-class baseline of 0.18.
+    Six ranked, actionable recommendations follow.
+  </p>
+  <div class="hero-meta">
+    <span class="meta-chip">30,000 rows · 53 features</span>
+    <span class="meta-chip">Lane: Ranking Signal Analysis</span>
+    <span class="meta-chip">sklearn · SHAP · pandas</span>
+    <span class="meta-chip">FlyRank/internship-starter</span>
+    <span class="meta-chip">2026</span>
+  </div>
+</div>
+
+<!-- STAT STRIP -->
+<div class="stat-strip">
+  <div class="stat-strip-inner">
+    <div class="stat-item">
+      <div class="stat-val">0.90</div>
+      <div class="stat-label">Precision@50 (RF)</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">5×</div>
+      <div class="stat-label">Lift over baseline</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">0.0012</div>
+      <div class="stat-label">Search volume correlation</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">2,522</div>
+      <div class="stat-label">Zero-click opportunity pages</div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <!-- 1. QUESTION -->
+  <section id="question">
+    <h2>01 · Question</h2>
+    <h3>Which signals actually predict search ranking performance?</h3>
+    <p>
+      Content teams routinely make prioritization decisions based on intuition:
+      target high search-volume keywords, write longer articles, publish frequently.
+      This work tests those assumptions against real performance data.
+    </p>
+    <p>
+      <strong>Research question:</strong> Which content and search performance signals are
+      most predictive of a page achieving and sustaining a high search ranking position —
+      and which commonly assumed signals have no real predictive power?
+    </p>
+    <p>
+      <strong>Decision this supports:</strong> Given a portfolio of content pages,
+      which signals should a content team optimize first to improve ranking tier
+      and arrest declining trends?
+    </p>
+    <p>
+      <strong>Output:</strong> A ranked signal importance report (SHAP) and
+      an evidence-backed action playbook — six recommendations ordered by predictive power.
+    </p>
+  </section>
+
+  <!-- 2. DATA -->
+  <section id="data">
+    <h2>02 · Data</h2>
+    <h3>FlyRank Internship Starter Dataset</h3>
+    <p>
+      <strong>Source:</strong> <a href="https://huggingface.co/datasets/FlyRank/internship-starter" target="_blank">FlyRank/internship-starter</a>
+      — public, no authentication required.
+      Built on the FlyRank ML Internship dataset.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Property</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Rows</td><td>30,000</td></tr>
+          <tr><td>Columns</td><td>53</td></tr>
+          <tr><td>Clients</td><td>32 pseudonymized</td></tr>
+          <tr><td>Grain</td><td>One row per content item (90-day aggregated window)</td></tr>
+          <tr><td>Target rate</td><td>17.1% top performers</td></tr>
+          <tr><td>IDs</td><td>Hashed — no URLs, titles, keywords, or domains</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>What we excluded and why</h3>
+    <p>
+      The following columns directly encode or are derived from the outcome label
+      and were excluded as features to prevent leakage:
+    </p>
+    <p>
+      <strong>Product flags:</strong> <code>health_score</code>, <code>needs_ctr_fix</code>,
+      <code>is_quick_win</code>, <code>needs_indexing</code>, <code>needs_engagement_fix</code>,
+      <code>ai_opportunity</code>, <code>is_underperformer</code>, <code>is_declining</code>,
+      <code>is_initial_refresh_candidate</code>
+    </p>
+    <p>
+      <strong>Position/trend encodings:</strong> <code>ctr</code>, <code>avg_position</code>,
+      <code>impression_tier</code> — these directly encode <code>position_tier</code>
+      which was used to build the target.
+    </p>
+    <p>
+      <strong>Data quality:</strong> <code>scroll_rate</code>, <code>ai_traffic_pct</code>
+      — contain values &gt;100 indicating measurement issues.
+    </p>
+  </section>
+
+  <!-- 3. METHODOLOGY -->
+  <section id="methodology">
+    <h2>03 · Methodology</h2>
+    <h3>Target definition</h3>
+    <p>
+      <code>is_top_performer = 1</code> when <code>position_tier ∈ {top_3, page_1}</code>
+      AND <code>trend_direction ∈ {up, stable, flat}</code>.
+      This captures both current ranking quality and momentum —
+      a page ranking well but declining is not a top performer.
+    </p>
+    <h3>Feature engineering</h3>
+    <p>Seven derived ratio features added to the 38 clean raw columns:</p>
+    <pre>impression_momentum      = impressions_last_30d / (impressions_prev_30d + 1)
+click_momentum           = clicks_last_30d / (clicks_prev_30d + 1)
+click_through_efficiency = clicks_90d / (impressions_90d + 1)
+engagement_density       = engaged_sessions_90d / (sessions_90d + 1)
+session_per_click        = sessions_90d / (clicks_90d + 1)
+content_density          = char_count / (word_count + 1)
+ai_traffic_share         = ai_sessions_90d / (sessions_90d + 1)</pre>
+    <h3>Leakage-safe split</h3>
+    <p>
+      <strong>GroupShuffleSplit on <code>client_id</code></strong> (test_size=0.2, random_state=42).
+      No client appears in both train and test sets — prevents the model from learning
+      client-specific patterns that wouldn't generalize to new clients.
+      Train: 23,837 rows · Test: 6,163 rows.
+    </p>
+    <h3>Model</h3>
+    <p>
+      <strong>RandomForestClassifier</strong> — n_estimators=50, max_depth=6,
+      min_samples_leaf=20, class_weight='balanced', random_state=42.
+      Chosen for interpretability via SHAP and robustness to mixed feature types.
+    </p>
+    <p>
+      <strong>Primary metric: Precision@50</strong> — top 50 predicted positives.
+      Actionable for a content team: you act on the pages the model is most confident about.
+    </p>
+    <div class="alert">
+      <strong>Assumptions:</strong> All ratios use +1 smoothing to avoid division by zero.
+      Null values in keyword metrics (search_volume, competition, cpc) filled with 0 — 8.2% null rate,
+      indicating clients without keyword tool access.
+    </div>
+  </section>
+
+  <!-- 4. RESULTS -->
+  <section id="results">
+    <h2>04 · Results</h2>
+    <h3>Model vs baseline</h3>
+    <div class="model-compare">
+      <div class="model-card">
+        <div class="model-name">Baseline — majority class</div>
+        <div class="model-score">0.18</div>
+        <div class="model-metric">Precision@50</div>
+      </div>
+      <div class="model-card winner">
+        <div class="model-name">Random Forest</div>
+        <div class="model-score">0.90</div>
+        <div class="model-metric">Precision@50 &nbsp;·&nbsp; 5× lift</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Baseline</th><th>Random Forest</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Precision@50</td><td>0.18</td><td><strong>0.90</strong></td></tr>
+          <tr><td>Precision (class 1)</td><td>0.00</td><td>0.55</td></tr>
+          <tr><td>Recall (class 1)</td><td>0.00</td><td>0.86</td></tr>
+          <tr><td>F1 (class 1)</td><td>0.00</td><td>0.67</td></tr>
+          <tr><td>Accuracy</td><td>0.79</td><td>0.83</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Top 15 signals by SHAP importance</h3>
+    <div class="shap-bar-wrap">
+      <div class="shap-row"><div class="shap-label">impression_momentum</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:100%"></div></div><div class="shap-val">0.1418</div></div>
+      <div class="shap-row"><div class="shap-label">impressions_prev_30d</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:22%"></div></div><div class="shap-val">0.0312</div></div>
+      <div class="shap-row"><div class="shap-label">impressions_last_30d</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:22%"></div></div><div class="shap-val">0.0306</div></div>
+      <div class="shap-row"><div class="shap-label">session_per_click</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:18%"></div></div><div class="shap-val">0.0258</div></div>
+      <div class="shap-row"><div class="shap-label">click_momentum</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:16%"></div></div><div class="shap-val">0.0220</div></div>
+      <div class="shap-row"><div class="shap-label">clicks_last_30d</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:14%"></div></div><div class="shap-val">0.0201</div></div>
+      <div class="shap-row"><div class="shap-label">click_through_efficiency</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:11%"></div></div><div class="shap-val">0.0162</div></div>
+      <div class="shap-row"><div class="shap-label">days_with_impressions</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:10%"></div></div><div class="shap-val">0.0146</div></div>
+      <div class="shap-row"><div class="shap-label">clicks_90d</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:10%"></div></div><div class="shap-val">0.0140</div></div>
+      <div class="shap-row"><div class="shap-label">content_density</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:9%"></div></div><div class="shap-val">0.0122</div></div>
+      <div class="shap-row"><div class="shap-label">impressions_90d</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:9%"></div></div><div class="shap-val">0.0122</div></div>
+      <div class="shap-row"><div class="shap-label">clicks_prev_30d</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:6%"></div></div><div class="shap-val">0.0090</div></div>
+      <div class="shap-row"><div class="shap-label">content_type</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:4%"></div></div><div class="shap-val">0.0060</div></div>
+      <div class="shap-row"><div class="shap-label">days_since_last_update</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:3%"></div></div><div class="shap-val">0.0044</div></div>
+      <div class="shap-row"><div class="shap-label">word_count</div><div class="shap-bar-bg"><div class="shap-bar-fill" style="width:3%"></div></div><div class="shap-val">0.0038</div></div>
+    </div>
+    <p>
+      <strong>Key finding:</strong> <code>impression_momentum</code> dominates by 4.5× over the
+      second-ranked signal. The model is largely learning that pages already growing continue to grow —
+      momentum is the primary predictive signal in this dataset.
+    </p>
+  </section>
+
+  <!-- 5. LIMITATIONS -->
+  <section id="limitations">
+    <h2>05 · Limitations &amp; honest framing</h2>
+    <h3>What this work cannot claim</h3>
+    <p>
+      <strong>Observational, not causal.</strong> We identify correlates of top performance, not causes.
+      Pages that already rank well naturally accumulate more impressions and clicks,
+      inflating impression-based features. Reverse causality is likely for the top signals.
+    </p>
+    <p>
+      <strong>Momentum dominance.</strong> The #1 signal (SHAP 0.1418) dwarfs all others (next: 0.0312).
+      This gap suggests the model is largely learning "pages already growing continue to grow" —
+      a momentum effect that is observable but not directly actionable as a lever to pull.
+    </p>
+    <p>
+      <strong>Engagement signals are flat.</strong> <code>engagement_rate</code> and
+      <code>engagement_density</code> both have median = 0 across top and bottom performers.
+      These signals carry no useful information in this dataset.
+    </p>
+    <p>
+      <strong>Word count is not a differentiator.</strong> Top performers: 2,797 words median.
+      Bottom performers: 2,902. A 4% difference in the wrong direction.
+    </p>
+    <p>
+      <strong>Fixed 90-day window.</strong> All performance metrics are aggregated over a single snapshot.
+      We cannot observe how signals change over time or model causal sequences.
+    </p>
+    <p>
+      <strong>No content topic or vertical.</strong> Fully anonymized — no URLs, titles, or keywords.
+      We cannot control for industry vertical or SERP feature type, both of which affect
+      CTR and position independently of content signals.
+    </p>
+  </section>
+
+  <!-- 6. RECOMMENDATIONS -->
+  <section id="recommendations">
+    <h2>06 · Ranked recommendations</h2>
+    <h3>Action playbook — ordered by signal importance</h3>
+
+    <div class="myth-grid">
+      <div class="myth-card">
+        <div class="myth-label">✗ Myth busted</div>
+        <div class="myth-val">r = 0.0012</div>
+        <div class="myth-desc">search_volume vs impressions_90d. Effectively zero. Stop using it as a prioritization signal.</div>
+      </div>
+      <div class="myth-card">
+        <div class="myth-label">✗ Myth busted</div>
+        <div class="myth-val">2,797 vs 2,902</div>
+        <div class="myth-desc">Top vs bottom performer median word count. No meaningful difference — length does not predict ranking.</div>
+      </div>
+    </div>
+
+    <div class="rec-list">
+      <div class="rec-card">
+        <div class="rec-num">1</div>
+        <div>
+          <div class="rec-signal"><code>impression_momentum</code> <span class="pill pill-high">HIGH</span></div>
+          <div class="rec-finding">#1 signal by 4.5× margin (SHAP 0.1418). Pages with last_30d impressions &gt; prev_30d are far more likely to be top performers. 3,228 pages are growing fast but still below median impressions.</div>
+          <div class="rec-action">→ Identify pages with impression_momentum &gt; 1.2 and below median impressions. These are your highest-leverage targets. Refresh content, add internal links, expand topically to sustain growth.</div>
+        </div>
+      </div>
+      <div class="rec-card">
+        <div class="rec-num">2</div>
+        <div>
+          <div class="rec-signal"><code>impressions volume</code> <span class="pill pill-high">HIGH</span></div>
+          <div class="rec-finding">Raw impression signals (impressions_90d, last_30d, prev_30d) occupy ranks 2, 3, and 11. Top performers have 2.36× higher median impressions than bottom performers.</div>
+          <div class="rec-action">→ Pages with low impressions_90d but positive momentum are growing but not yet visible. Prioritize these for link building and topical authority expansion.</div>
+        </div>
+      </div>
+      <div class="rec-card">
+        <div class="rec-num">3</div>
+        <div>
+          <div class="rec-signal"><code>click_momentum + clicks_90d</code> <span class="pill pill-high">HIGH</span></div>
+          <div class="rec-finding">Click signals occupy ranks 5, 6, and 9. Click growth predicts sustained top performance independently of impression volume.</div>
+          <div class="rec-action">→ Monitor clicks_last_30d vs clicks_prev_30d monthly. Pages where impressions are growing but clicks are flat need CTR optimization — test title and meta description variants.</div>
+        </div>
+      </div>
+      <div class="rec-card">
+        <div class="rec-num">4</div>
+        <div>
+          <div class="rec-signal"><code>click_through_efficiency</code> <span class="pill pill-high">HIGH</span></div>
+          <div class="rec-finding">2,522 pages (8.4% of all content) have &gt;500 impressions but zero clicks. Visible but completely failing to capture traffic.</div>
+          <div class="rec-action">→ Flag all pages with impressions_90d &gt; 500 and clicks_90d = 0. Fix titles and meta descriptions first. These are immediate wins requiring no content rewrite.</div>
+        </div>
+      </div>
+      <div class="rec-card">
+        <div class="rec-num">5</div>
+        <div>
+          <div class="rec-signal"><code>days_since_last_update</code> <span class="pill pill-med">MEDIUM</span></div>
+          <div class="rec-finding">Rank 14 in SHAP but operationally important — stale content correlates with declining trend direction.</div>
+          <div class="rec-action">→ Build a freshness queue: flag all pages not updated in 60+ days with flat or declining impression_momentum for immediate review and refresh.</div>
+        </div>
+      </div>
+      <div class="rec-card">
+        <div class="rec-num">6</div>
+        <div>
+          <div class="rec-signal"><code>search_volume + word_count</code> <span class="pill pill-strat">STRATEGIC</span></div>
+          <div class="rec-finding">search_volume r = 0.0012 with impressions. Word count median: 2,797 (top) vs 2,902 (bottom). Both are myths — neither predicts ranking in this dataset.</div>
+          <div class="rec-action">→ Remove search_volume and word count targets from content briefs. Replace with impression_momentum and click_through_efficiency as the primary prioritization signals.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. REPRODUCIBILITY -->
+  <section id="reproducibility">
+    <h2>07 · Reproducibility</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>Dataset</td><td><a href="https://huggingface.co/datasets/FlyRank/internship-starter" target="_blank">FlyRank/internship-starter</a> — public, no auth required</td></tr>
+          <tr><td>Split</td><td>GroupShuffleSplit on client_id, test_size=0.2, random_state=42</td></tr>
+          <tr><td>Model</td><td>RandomForestClassifier(n_estimators=50, max_depth=6, min_samples_leaf=20, class_weight='balanced', random_state=42)</td></tr>
+          <tr><td>SHAP</td><td>TreeExplainer on 300-row test sample, shap_values[:,:,1] (positive class)</td></tr>
+          <tr><td>Notebook</td><td><a href="https://github.com/Shreshth114/flyrank-ml-internship/blob/main/work/notebooks/capstone.ipynb" target="_blank">work/notebooks/capstone.ipynb</a></td></tr>
+          <tr><td>Repo</td><td><a href="https://github.com/Shreshth114/flyrank-ml-internship" target="_blank">github.com/Shreshth114/flyrank-ml-internship</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Acknowledgments &amp; data credit</h3>
+    <p>
+      Built on the FlyRank ML Internship dataset.
+      Data source: <a href="https://flyrank.ai" target="_blank">https://flyrank.ai</a>.
+      Dataset: <a href="https://huggingface.co/datasets/FlyRank/internship-starter" target="_blank">FlyRank/internship-starter</a>
+      on Hugging Face.
+    </p>
+  </section>
+
+</main>
+
+<footer>
+  FlyRank ML Internship &nbsp;·&nbsp; Ranking Signal Analysis &nbsp;·&nbsp; 2026 &nbsp;·&nbsp;
+  Built on the <a href="https://flyrank.ai">FlyRank ML Internship dataset</a>
+</footer>
+
+</body>
+</html>
